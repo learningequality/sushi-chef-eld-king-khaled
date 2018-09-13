@@ -63,14 +63,31 @@ CHANNEL_THUMBNAIL = None                                    # Local path or url 
 # Additional constants
 ################################################################################
 
+def title_patterns(title):
+    pattern01 = r"\d+\-\d+"
+    match = re.search(pattern01, title)
+    if match:
+        index = match.span()
+        #new_title = title[index[1]+1:]
+        numbers = title[index[0]:index[1]]
+        number_unit = numbers.split("-")[0]
+        return "Unit {}".format(number_unit)
+    else:
+        return title
+
 
 class Node(object):
-    def __init__(self, title, source_id, lang="en")
+    def __init__(self, title, source_id, lang="en"):
         self.title = title
         self.source_id = source_id
         self.tree_nodes = OrderedDict()
         self.lang = lang
         self.description = None
+
+    def add_node(self, obj):
+        node = obj.to_node()
+        if node is not None:
+            self.tree_nodes[node["source_id"]] = node
 
     def to_node(self):
         return dict(
@@ -85,21 +102,27 @@ class Node(object):
         )
     
 
-
 class Subject(Node):
     def __init__(self, *args, **kwargs):
         super(Subject, self).__init__(*args, **kwargs)
-        self.topics = None
+        self.topics = []
 
-    def add_topics(self, topics):
-        self.topics = topics
-    
+    def load(self, filename):
+        with open(filename, "r") as f:
+            topics = json.load(f)
+            for topic in topics:
+                topic_obj = Topic(topic["title"], topic["source_id"])
+                for unit in topic["units"]:
+                    units = Topic.auto_generate_units(unit["source_id"], title=unit["title"])
+                    topic_obj.units.extend(units)
+                self.topics.append(topic_obj)
+                break
 
 
 class Topic(Node):
-    def add_unit(self, unit):
-        node = unit.to_node()
-        self.tree_nodes[node["source_id"]] = node
+    def __init__(self, *args, **kwargs):
+        super(Topic, self).__init__(*args, **kwargs)
+        self.units = []
 
     @staticmethod
     def auto_generate_units(url, title=None):
@@ -110,8 +133,12 @@ class Topic(Node):
                 units[title].append(url)
         else:
             for name, url in youtube.playlist_name_links():
-                unit = name.split("|")[1]
-                unit_name = unit.strip().split(" ")[0]
+                unit_name_list = name.split("|")
+                if len(unit_name_list) > 1:
+                    unit = unit_name_list[1]
+                    unit_name = unit.strip().split(" ")[0]
+                else:
+                    unit_name = title_patterns(name)
                 units[unit_name].append(url)
 
         for title, urls in units.items():
@@ -127,11 +154,9 @@ class Unit(Node):
 
     def download(self, download=True, base_path=None):
         for url in self.urls:
-            youtube = YouTubeResource(url, lang=self.lang, section_title=self.title)
+            youtube = YouTubeResource(url, lang=self.lang)
             youtube.download(download, base_path)
-            node = youtube.to_node()
-            if node is not None:
-                self.tree_nodes[url] = node
+            self.add_node(youtube)
 
 
 class YouTubeResource(object):
@@ -246,7 +271,7 @@ class YouTubeResource(object):
             download is False:
             return
 
-        download_to = build_path([base_path, 'videos', self.section_title])
+        download_to = build_path([base_path, 'videos'])
         for i in range(4):
             try:
                 info = self.get_video_info(download_to=download_to, subtitles=False)
@@ -349,54 +374,28 @@ class KingKhaledChef(JsonTreeChef):
         base_path = [DATA_DIR] + ["King Khaled University in Abha"]
         base_path = build_path(base_path)
 
-        topics = [
-            {"title": "English Level 1", "source_id": "English Level 1", 
-            "units": [
-                {"title": "Grammar and Writing", "source_id": "https://www.youtube.com/watch?v=zY8mHpUEU3k&list=PL08ef9eJxtJZN_sWobzYNoHvYjSb8u824", "lang": "en"},
-                {"title": "Reading", "source_id": "https://www.youtube.com/watch?v=xLzjHFe09As&list=PL08ef9eJxtJYskNTBZP0JFfCBWGOxPEn7", "lang": "en"},
-            {"title":  "Listening", "source_id": "https://www.youtube.com/watch?v=4n5DyEP7aOk&list=PL08ef9eJxtJa2Okq192tM4SknbqwDf48w", "lang": "en"}
-            ]},
-            {"title": "English Level 2", "source_id": "English Level 2",
-            "units": [
-                {"title": None, "source_id": "https://www.youtube.com/watch?v=CF8yxTmv3cM&list=PL08ef9eJxtJaN42tSgMrjciyxga7ZEGQh", "lang": "en"}
-            ]},
-            {"title": "English Level 3", "source_id": "English Level 3",
-            "units": [
-                {"title": "Listening", "source_id": "https://www.youtube.com/watch?v=tWU_8WsRGbk&list=PL08ef9eJxtJZeTd5nGrpjk-NN-zChbbSy", "lang": "en"},
-                {"title": "Reading", "source_id": "https://www.youtube.com/watch?v=oebCdKb8ZZ8&list=PL08ef9eJxtJauvFoukaeYqspHAZYgs-H6", "lang": "en"},
-                {"title":  "Grammar", "source_id": "https://www.youtube.com/watch?v=k9djhlbjUF0&list=PL08ef9eJxtJb5TtkASvqsYSHQ6o3xLfT4", "lang": "en"},
-                {"title": "Writing", "source_id": "https://www.youtube.com/watch?v=LZ86ViB3Rr0&list=PL08ef9eJxtJZlYfzRnqRRuJgGNUMXlBvI", "lang": "en"}
-            ]},
-            {"title": "General English", "source_id": "General English",
-            "units": [
-                {"title": "Listening", "source_id": "https://www.youtube.com/watch?v=tWU_8WsRGbk&list=PL08ef9eJxtJZeTd5nGrpjk-NN-zChbbSy", "lang": "en"},
-                {"title": "Reading", "source_id": "https://www.youtube.com/watch?v=oebCdKb8ZZ8&list=PL08ef9eJxtJauvFoukaeYqspHAZYgs-H6", "lang": "en"},
-                {"title": "Grammar", "source_id": "https://www.youtube.com/watch?v=k9djhlbjUF0&list=PL08ef9eJxtJb5TtkASvqsYSHQ6o3xLfT4", "lang": "en"},
-                {"title": "Writing", "source_id": "https://www.youtube.com/watch?v=LZ86ViB3Rr0&list=PL08ef9eJxtJZlYfzRnqRRuJgGNUMXlBvI", "lang": "en"}
-            ]},
-            {"title": "Vocabulary Building", "source_id": "Vocabulary Building",
-            "units": [
-                {"title": "Vocabulary Building 1", "source_id": "https://www.youtube.com/watch?v=PtuzJ7_XD74&list=PL08ef9eJxtJYdYdDc66-ZKSpG9ilNpeZU", "lang": "en"},
-                {"title": "Vocabulary Building 2", "source_id": "https://www.youtube.com/watch?v=8Bca-lqbhm8&list=PL08ef9eJxtJZPsXclQPJXNSFVOvwZbl_U", "lang": "en"}
-            ]}
-        ]
+        #subject_01 = Subject(title="English Language Skills اللغة الإنجليزية", 
+        #                    source_id="English Language Skills اللغة الإنجليزية")
+        #subject_01.load("resources_en_lang_skills.json")
+        subject_01 = Subject(title="Arabic Language Skills اللغة العربية", 
+                            source_id="Arabic Language Skills اللغة الإنجليزية")
+        subject_01.load("resources_ar_lang_skills.json")
 
-        subject_01 = Subject(title="اللغة الإنجليزية English Language Skills", 
-                            source_id="اللغة الإنجليزية English Language Skills")
-        subject_01.add_topics(topics)
-        #subject_02 = Subject(title="اللغة العربية Arabic Language Skills", 
-        #                    source_id="اللغة الإنجليزية English Language Skills")
-        #subject_02.add_topics(topics)
+        #subject_01 = Subject(title="Islamic Studies الثقافة الإسلامية", 
+        #                    source_id="Islamic Studies الثقافة الإسلامية")
+        #subject_01.load("resources_ar_islamic_studies.json")
 
-        for subject_obj in [subjects01]:
-            for topic in subject_obj.topics:
-                topic_obj = Topic(topic["title"], topic["source_id"])
-                for unit in topics["units"]:
-                    units = Topic.auto_generate_units(unit["source_id"], title=unit["title"])
-                    for unit_obj in units:
-                        unit_obj.download(download=DOWNLOAD_VIDEOS, base_path=base_path)
-                        unit_obj.add_unit(unit_obj)
-            channel_tree["children"].append(subject_obj.to_node())
+        #subject_01 = Subject(title="Math الرياضيات", 
+        #                    source_id="Math الرياضيات")
+        #subject_01.load("resources_ar_math.json")
+
+        for subject in [subject_01]:
+            for topic in subject.topics:
+                for unit in topic.units:
+                    unit.download(download=DOWNLOAD_VIDEOS, base_path=base_path)
+                    topic.add_node(unit)
+                subject.add_node(topic)
+            channel_tree["children"].append(subject.to_node())
         
         return channel_tree
 
