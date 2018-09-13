@@ -63,6 +63,18 @@ CHANNEL_THUMBNAIL = None                                    # Local path or url 
 # Additional constants
 ################################################################################
 
+def title_has_numeration(title):
+    numbers = list(map(str, [1,2,3,4,5,6,7,8,9]))
+    arab_nums = ["١", "٢", "٣", "٤", "٥"]
+    title = title.replace("-", " ")
+    for elem in title.split(" "):
+        elem = elem.strip()
+        for num in numbers+arab_nums:
+            if elem == num:
+                return title.replace(elem, "").strip()
+    return False
+
+
 def title_patterns(title):
     pattern01 = r"\d+\-\d+"
     match = re.search(pattern01, title)
@@ -72,6 +84,10 @@ def title_patterns(title):
         numbers = title[index[0]:index[1]]
         number_unit = numbers.split("-")[0]
         return "Unit {}".format(number_unit)
+
+    title_unit = title_has_numeration(title)
+    if title_unit is not False:
+        return title_unit
     else:
         return title
 
@@ -116,7 +132,6 @@ class Subject(Node):
                     units = Topic.auto_generate_units(unit["source_id"], title=unit["title"])
                     topic_obj.units.extend(units)
                 self.topics.append(topic_obj)
-                break
 
 
 class Topic(Node):
@@ -379,7 +394,7 @@ class KingKhaledChef(JsonTreeChef):
         #subject_01.load("resources_en_lang_skills.json")
         subject_01 = Subject(title="Arabic Language Skills اللغة العربية", 
                             source_id="Arabic Language Skills اللغة الإنجليزية")
-        subject_01.load("resources_ar_lang_skills.json")
+        subject_01.load("resources_ar_lang_skills_2.json")
 
         #subject_01 = Subject(title="Islamic Studies الثقافة الإسلامية", 
         #                    source_id="Islamic Studies الثقافة الإسلامية")
