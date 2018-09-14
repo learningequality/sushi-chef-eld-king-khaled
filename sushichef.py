@@ -64,14 +64,25 @@ CHANNEL_THUMBNAIL = None                                    # Local path or url 
 ################################################################################
 
 def title_has_numeration(title):
+    d = ["الوحده"]
+    if d[0] in title:
+        index = title.find(d[0])
+        return title[index: len(d[0]) + 2]
+    
     numbers = list(map(str, [1,2,3,4,5,6,7,8,9]))
     arab_nums = ["١", "٢", "٣", "٤", "٥"]
     title = title.replace("-", " ")
     for elem in title.split(" "):
         elem = elem.strip()
-        for num in numbers+arab_nums:
+        for num in numbers:
             if elem == num:
                 return title.replace(elem, "").strip()
+    
+    for arab_num in title:
+        index = title.find(arab_num)
+        if index != -1 and index >= len(title) - 1:
+            return title.replace(arab_num, "").strip()
+    
     return False
 
 
@@ -80,11 +91,18 @@ def title_patterns(title):
     match = re.search(pattern01, title)
     if match:
         index = match.span()
-        #new_title = title[index[1]+1:]
         numbers = title[index[0]:index[1]]
         number_unit = numbers.split("-")[0]
         return "Unit {}".format(number_unit)
-
+    
+    pattern02 = r"\d+\s+\d+"
+    match = re.search(pattern02, title)
+    if match:
+        index = match.span()
+        numbers = title[index[0]:index[1]]
+        #number_unit = numbers.split(" ")[0]
+        return "Unit {}".format(title[index[1]:])
+    
     title_unit = title_has_numeration(title)
     if title_unit is not False:
         return title_unit
@@ -347,6 +365,36 @@ def download(source_id):
     return False
 
 
+def clean_leafs_nodes_plus(channel_tree):
+    children = channel_tree.get("children", None)
+    if children is None:
+        return
+    elif len(children) == 1 and not "children" in children[0]:
+        return channel_tree["children"][0]
+    elif len(children) == 0:
+        return -1
+    else:
+        del_nodes = []
+        for i, node in enumerate(children):
+            leaf_node = clean_leafs_nodes_plus(node)
+            if leaf_node is not None and leaf_node != -1:
+                if leaf_node["source_id"].endswith(".js"):
+                    levels = leaf_node["source_id"].split("/")
+                    parent_dir = levels[-2] #dirname
+                    leaf_node["title"] = "{}_{}".format(parent_dir, leaf_node["title"])
+                children[i] = leaf_node
+            elif leaf_node == -1:
+                del children[i]
+            elif leaf_node is None:
+                try:
+                    if len(node["children"]) == 0:
+                        del children[i]
+                    elif len(node["children"]) == 1:
+                        children[i] = node["children"][0]
+                except KeyError:
+                    pass
+
+
 # The chef subclass
 ################################################################################
 class KingKhaledChef(JsonTreeChef):
@@ -362,7 +410,9 @@ class KingKhaledChef(JsonTreeChef):
         super(KingKhaledChef, self).__init__()
 
     def pre_run(self, args, options):
-        self.write_tree_to_json(self.scrape(args, options))
+        channel_tree = self.scrape(args, options)
+        #clean_leafs_nodes_plus(channel_tree)
+        self.write_tree_to_json(channel_tree)
 
     def scrape(self, args, options):
         LANG = 'ar'
@@ -392,19 +442,19 @@ class KingKhaledChef(JsonTreeChef):
         #subject_01 = Subject(title="English Language Skills اللغة الإنجليزية", 
         #                    source_id="English Language Skills اللغة الإنجليزية")
         #subject_01.load("resources_en_lang_skills.json")
-        subject_01 = Subject(title="Arabic Language Skills اللغة العربية", 
-                            source_id="Arabic Language Skills اللغة الإنجليزية")
-        subject_01.load("resources_ar_lang_skills_2.json")
+        #subject_01 = Subject(title="Arabic Language Skills اللغة العربية", 
+        #                    source_id="Arabic Language Skills اللغة الإنجليزية")
+        #subject_01.load("resources_ar_lang_skills_2.json")
 
-        #subject_01 = Subject(title="Islamic Studies الثقافة الإسلامية", 
-        #                    source_id="Islamic Studies الثقافة الإسلامية")
-        #subject_01.load("resources_ar_islamic_studies.json")
+        subject_01 = Subject(title="Islamic Studies الثقافة الإسلامية", 
+                            source_id="Islamic Studies الثقافة الإسلامية")
+        subject_01.load("resources_ar_islamic_studies.json")
 
-        #subject_01 = Subject(title="Math الرياضيات", 
-        #                    source_id="Math الرياضيات")
-        #subject_01.load("resources_ar_math.json")
+        subject_02 = Subject(title="Math الرياضيات", 
+                            source_id="Math الرياضيات")
+        subject_02.load("resources_ar_math.json")
 
-        for subject in [subject_01]:
+        for subject in [subject_01, subject_02]:
             for topic in subject.topics:
                 for unit in topic.units:
                     unit.download(download=DOWNLOAD_VIDEOS, base_path=base_path)
