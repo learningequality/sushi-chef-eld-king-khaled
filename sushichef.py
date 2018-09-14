@@ -67,6 +67,7 @@ def title_has_numeration(title):
     d = ["الوحده"]
     if d[0] in title:
         index = title.find(d[0])
+        #print(title, index)
         return title[index: len(d[0]) + 2]
     
     numbers = list(map(str, [1,2,3,4,5,6,7,8,9]))
@@ -87,21 +88,21 @@ def title_has_numeration(title):
 
 
 def title_patterns(title):
+    title = re.sub(' +', ' ' , title)
     pattern01 = r"\d+\-\d+"
     match = re.search(pattern01, title)
     if match:
         index = match.span()
         numbers = title[index[0]:index[1]]
         number_unit = numbers.split("-")[0]
-        return "Unit {}".format(number_unit)
+        return "Unit {}".format(number_unit.strip())
     
     pattern02 = r"\d+\s+\d+"
     match = re.search(pattern02, title)
     if match:
         index = match.span()
         numbers = title[index[0]:index[1]]
-        #number_unit = numbers.split(" ")[0]
-        return "Unit {}".format(title[index[1]:])
+        return "Unit {}".format(title[index[1]:].strip())
     
     title_unit = title_has_numeration(title)
     if title_unit is not False:
@@ -439,22 +440,23 @@ class KingKhaledChef(JsonTreeChef):
         base_path = [DATA_DIR] + ["King Khaled University in Abha"]
         base_path = build_path(base_path)
 
-        #subject_01 = Subject(title="English Language Skills اللغة الإنجليزية", 
-        #                    source_id="English Language Skills اللغة الإنجليزية")
-        #subject_01.load("resources_en_lang_skills.json")
-        #subject_01 = Subject(title="Arabic Language Skills اللغة العربية", 
-        #                    source_id="Arabic Language Skills اللغة الإنجليزية")
-        #subject_01.load("resources_ar_lang_skills_2.json")
+        subject_en = Subject(title="English Language Skills اللغة الإنجليزية", 
+                            source_id="English Language Skills اللغة الإنجليزية")
+        subject_en.load("resources_en_lang_skills.json")
 
-        subject_01 = Subject(title="Islamic Studies الثقافة الإسلامية", 
+        subject_ar = Subject(title="Arabic Language Skills اللغة العربية", 
+                            source_id="Arabic Language Skills اللغة الإنجليزية")
+        subject_ar.load("resources_ar_lang_skills.json")
+
+        subject_ar_st = Subject(title="Islamic Studies الثقافة الإسلامية", 
                             source_id="Islamic Studies الثقافة الإسلامية")
-        subject_01.load("resources_ar_islamic_studies.json")
+        subject_ar_st.load("resources_ar_islamic_studies.json")
 
-        subject_02 = Subject(title="Math الرياضيات", 
+        subject_ar_math = Subject(title="Math الرياضيات", 
                             source_id="Math الرياضيات")
-        subject_02.load("resources_ar_math.json")
+        subject_ar_math.load("resources_ar_math.json")
 
-        for subject in [subject_01, subject_02]:
+        for subject in [subject_en, subject_ar, subject_ar_st, subject_ar_math]:
             for topic in subject.topics:
                 for unit in topic.units:
                     unit.download(download=DOWNLOAD_VIDEOS, base_path=base_path)
