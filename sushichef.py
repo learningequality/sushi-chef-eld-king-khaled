@@ -127,7 +127,7 @@ class Node(object):
     def to_node(self):
         return dict(
             kind=content_kinds.TOPIC,
-            source_id=self.title,
+            source_id=self.source_id,
             title=self.title,
             description=self.description,
             language=self.lang,
@@ -344,56 +344,6 @@ class YouTubeResource(object):
                 license=LICENSE
             )
             return node
-
-
-def download(source_id):
-    tries = 0
-    while tries < 4:
-        try:
-            document = downloader.read(source_id, loadjs=False, session=sess)
-        except requests.exceptions.HTTPError as e:
-            LOGGER.info("Error: {}".format(e))
-        except requests.exceptions.ConnectionError:
-            ### this is a weird error, may be it's raised when the webpage
-            ### is slow to respond requested resources
-            LOGGER.info("Connection error, the resource will be scraped in 5s...")
-            time.sleep(3)
-        except requests.exceptions.TooManyRedirects as e:
-            LOGGER.info("Error: {}".format(e))
-        else:
-            return document
-        tries += 1
-    return False
-
-
-def clean_leafs_nodes_plus(channel_tree):
-    children = channel_tree.get("children", None)
-    if children is None:
-        return
-    elif len(children) == 1 and not "children" in children[0]:
-        return channel_tree["children"][0]
-    elif len(children) == 0:
-        return -1
-    else:
-        del_nodes = []
-        for i, node in enumerate(children):
-            leaf_node = clean_leafs_nodes_plus(node)
-            if leaf_node is not None and leaf_node != -1:
-                if leaf_node["source_id"].endswith(".js"):
-                    levels = leaf_node["source_id"].split("/")
-                    parent_dir = levels[-2] #dirname
-                    leaf_node["title"] = "{}_{}".format(parent_dir, leaf_node["title"])
-                children[i] = leaf_node
-            elif leaf_node == -1:
-                del children[i]
-            elif leaf_node is None:
-                try:
-                    if len(node["children"]) == 0:
-                        del children[i]
-                    elif len(node["children"]) == 1:
-                        children[i] = node["children"][0]
-                except KeyError:
-                    pass
 
 
 # The chef subclass
