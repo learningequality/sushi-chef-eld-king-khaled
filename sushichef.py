@@ -110,6 +110,21 @@ def title_patterns(title):
         return title
 
 
+def remove_units_number(title):
+    match = re.search(r'\|.*\|', title)
+    if match:
+        index = match.span()
+        new_title = "{} | {}".format(title[:index[0]].strip(), title[index[1]:].strip())
+        return new_title.strip()
+    return title
+
+
+def remove_special_case(title):
+    title = title.replace("مهارات في علم الرياضيات", "")
+    title = title.replace("-", "")
+    return title.strip()
+
+
 class Node(object):
     def __init__(self, title, source_id, lang="en"):
         self.title = title
@@ -163,7 +178,7 @@ class Topic(Node):
         youtube = YouTubeResource(url)
         units = defaultdict(list)
         if title is not None:
-            for url in youtube.playlist_links():
+            for _, url in youtube.playlist_name_links():
                 units[title].append(url)
         else:
             for name, url in youtube.playlist_name_links():
@@ -191,6 +206,7 @@ class Unit(Node):
         for url in self.urls:
             youtube = YouTubeResource(url, lang=self.lang)
             youtube.download(download, base_path)
+            youtube.title = remove_special_case(remove_units_number(youtube.title))
             self.add_node(youtube)
 
 
@@ -216,6 +232,17 @@ class YouTubeResource(object):
         if url[-1] == "/":
             url = url[:-1]
         return url.strip()
+
+    @property
+    def title(self):
+        return self.name if self.name is not None else self.filename
+
+    @title.setter
+    def title(self, v):
+        if self.name is not None:
+            self.name = v
+        else:
+            self.filename = v
 
     @classmethod
     def is_youtube(self, url, get_channel=False):
@@ -346,7 +373,7 @@ class YouTubeResource(object):
             node = dict(
                 kind=content_kinds.VIDEO,
                 source_id=self.source_id,
-                title=self.name if self.name is not None else self.filename,
+                title=self.title,
                 description='',
                 author=AUTHOR,
                 files=files,
@@ -430,14 +457,14 @@ class KingKhaledChef(JsonTreeChef):
                             source_id="التربية الخاصة Special Education")
         subject_sedu.load("resources_ar_special_education.json", auto_parse=True)
 
-        #subject_about_edu = Subject(title="في التربية والتعليم About Education and Schooling",
-        #                        source_id="في التربية والتعليم About Education and Schooling")
-        #subject_about_edu.load("resources_ar_about_education.json", auto_parse=True)
+        subject_about_edu = Subject(title="في التربية والتعليم About Education and Schooling",
+                                source_id="في التربية والتعليم About Education and Schooling")
+        subject_about_edu.load("resources_ar_about_education.json", auto_parse=True)
 
-        #subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
-        #                        source_id="مناهج وتدريس Teaching and Curriculum")
-        #subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
-        subjects = [subject_sedu]
+        subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
+                                source_id="مناهج وتدريس Teaching and Curriculum")
+        subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
+        subjects = [subject_sedu, subject_about_edu, subject_teaching]
         return channel_tree, subjects
 
     def scrape(self, args, options):
