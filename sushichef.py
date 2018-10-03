@@ -93,21 +93,22 @@ def title_patterns(title):
     if match:
         index = match.span()
         numbers = title[index[0]:index[1]]
-        number_unit = numbers.split("-")[0]
-        return "Unit {}".format(number_unit.strip())
+        number_unit = numbers.split("-")[0].strip()
+        return "Unit {}".format(number_unit), int(number_unit)
     
     pattern02 = r"\d+\s+\d+"
     match = re.search(pattern02, title)
     if match:
         index = match.span()
         numbers = title[index[0]:index[1]]
-        return "Unit {}".format(title[index[1]:].strip())
+        number_unit = int(title[index[1]:].strip())
+        return "Unit {}".format(number), number_unit
     
     title_unit = title_has_numeration(title)
     if title_unit is not False:
-        return title_unit
+        return title_unit, 1
     else:
-        return title
+        return title, 1
 
 
 def remove_units_number(title):
@@ -160,10 +161,10 @@ class Subject(Node):
         with open(filename, "r") as f:
             topics = json.load(f)
             for topic in topics:
-                topic_obj = Topic(topic["title"], topic["source_id"])
+                topic_obj = Topic(topic["title"], topic["source_id"], lang=CHANNEL_LANGUAGE)
                 for unit in topic["units"]:
                     units = Topic.auto_generate_units(unit["source_id"], 
-                        title=unit["title"], auto_parse=auto_parse)
+                        title=unit["title"], lang=unit["lang"], auto_parse=auto_parse)
                     topic_obj.units.extend(units)
                 self.topics.append(topic_obj)
 
@@ -174,26 +175,27 @@ class Topic(Node):
         self.units = []
 
     @staticmethod
-    def auto_generate_units(url, title=None, auto_parse=False):
+    def auto_generate_units(url, title=None, lang="en", auto_parse=False):
         youtube = YouTubeResource(url)
         units = defaultdict(list)
         if title is not None:
             for _, url in youtube.playlist_name_links():
-                units[title].append(url)
+                units[title].append((1, url))
         else:
             for name, url in youtube.playlist_name_links():
                 unit_name_list = name.split("|")
                 if len(unit_name_list) > 1 and auto_parse is False:
                     unit = unit_name_list[1]
                     unit_name = unit.strip().split(" ")[0]
+                    number_unit = 1
                 else:
-                    unit_name = title_patterns(name)
-                units[unit_name].append(url)
+                    unit_name, number_unit = title_patterns(name)
+                units[unit_name].append((number_unit, url))
 
-        units = sorted(units.items(), key=lambda x: x[0], reverse=False)
+        units = sorted(units.items(), key=lambda x: x[1][0], reverse=False)
         for title, urls in units:
-            unit = Unit(title, title)
-            unit.urls = urls
+            unit = Unit(title, title, lang=lang)
+            unit.urls = [url for _, url in urls]
             yield unit
 
 
@@ -208,6 +210,22 @@ class Unit(Node):
             youtube.download(download, base_path)
             youtube.title = remove_special_case(remove_units_number(youtube.title))
             self.add_node(youtube)
+
+    def to_node(self):
+        children = list(self.tree_nodes.values())
+        if len(children) == 1:
+            return children[0]
+        else:
+            return dict(
+                kind=content_kinds.TOPIC,
+                source_id=self.source_id,
+                title=self.title,
+                description=self.description,
+                language=self.lang,
+                author=AUTHOR,
+                license=LICENSE,
+                children=children
+            )
 
 
 class YouTubeResource(object):
@@ -388,13 +406,10 @@ class YouTubeResource(object):
 class KingKhaledChef(JsonTreeChef):
     HOSTNAME = BASE_URL
     TREES_DATA_DIR = os.path.join(DATA_DIR, 'trees')
-    SCRAPING_STAGE_OUTPUT_TPL = 'ricecooker_json_tree.json'
     THUMBNAIL = ""
 
     def __init__(self):
         build_path([KingKhaledChef.TREES_DATA_DIR])
-        self.scrape_stage = os.path.join(KingKhaledChef.TREES_DATA_DIR, 
-                                KingKhaledChef.SCRAPING_STAGE_OUTPUT_TPL)
         super(KingKhaledChef, self).__init__()
 
     def pre_run(self, args, options):
@@ -403,6 +418,7 @@ class KingKhaledChef(JsonTreeChef):
 
     def k12_lessons(self):
         global CHANNEL_SOURCE_ID
+        self.RICECOOKER_JSON_TREE = 'ricecooker_json_tree_k12.json'
         CHANNEL_NAME = "ELD King Khaled University Learning (العربيّة)"
         CHANNEL_SOURCE_ID = "sushi-chef-eld-k12-ar"
         channel_tree = dict(
@@ -438,8 +454,9 @@ class KingKhaledChef(JsonTreeChef):
 
     def intermediate_lessons(self):
         global CHANNEL_SOURCE_ID
+        self.RICECOOKER_JSON_TREE = 'ricecooker_json_tree_professional.json'
         CHANNEL_NAME = "ELD Teacher Professional Development Cources (العربيّة)"
-        CHANNEL_SOURCE_ID = "eld_teacher_prof_dev_ar"
+        CHANNEL_SOURCE_ID = "sushi-chef-eld-teacher-prof-dev-ar"
         channel_tree = dict(
                 source_domain=KingKhaledChef.HOSTNAME,
                 source_id=CHANNEL_SOURCE_ID,
@@ -477,9 +494,9 @@ class KingKhaledChef(JsonTreeChef):
             DOWNLOAD_VIDEOS = False
 
         global channel_tree
-        if basic_lessons:
+        if basic_lessons == 1:
             channel_tree, subjects = self.k12_lessons()
-        elif intermedian_lessons:
+        elif intermedian_lessons == 1:
             channel_tree, subjects = self.intermediate_lessons()
 
         base_path = [DATA_DIR] + ["King Khaled University in Abha"]
@@ -496,7 +513,9 @@ class KingKhaledChef(JsonTreeChef):
         return channel_tree
 
     def write_tree_to_json(self, channel_tree):
-        write_tree_to_json_tree(self.scrape_stage, channel_tree)
+        scrape_stage = os.path.join(KingKhaledChef.TREES_DATA_DIR, 
+                                self.RICECOOKER_JSON_TREE)
+        write_tree_to_json_tree(scrape_stage, channel_tree)
 
 
 # CLI
