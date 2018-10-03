@@ -64,10 +64,16 @@ CHANNEL_THUMBNAIL = None                                    # Local path or url 
 ################################################################################
 
 def title_has_numeration(title):
-    d = ["الوحده"]
-    if d[0] in title:
-        index = title.find(d[0])
-        return title[index: len(d[0]) + 2]
+    unit_name_ar = ["الوحده", "الوحدة"]
+    for unit_name in unit_name_ar:
+        if unit_name in title:
+            index = title.find(unit_name)
+            match = re.search("(?P<int>\d+)", title)
+            if match:
+                num = int(match.group("int"))
+                return title[index: index+len(unit_name)] + " " + str(num), num
+            else:
+                return title[index: index+len(unit_name)], None 
     
     numbers = list(map(str, [1,2,3,4,5,6,7,8,9]))
     arab_nums = ["١", "٢", "٣", "٤", "٥"]
@@ -76,14 +82,14 @@ def title_has_numeration(title):
         elem = elem.strip()
         for num in numbers:
             if elem == num:
-                return title.replace(elem, "").strip()
+                return title.replace(elem, "").strip(), num
     
     for arab_num in title:
         index = title.find(arab_num)
         if index != -1 and index >= len(title) - 1:
-            return title.replace(arab_num, "").strip()
+            return title.replace(arab_num, "").strip(), 1
     
-    return False
+    return False, None
 
 
 def title_patterns(title):
@@ -104,8 +110,10 @@ def title_patterns(title):
         number_unit = int(title[index[1]:].strip())
         return "Unit {}".format(number), number_unit
     
-    title_unit = title_has_numeration(title)
-    if title_unit is not False:
+    title_unit, unit_num = title_has_numeration(title)
+    if title_unit is not False and unit_num is not None:
+        return title_unit, unit_num
+    elif title_unit is not False and unit_num is None:
         return title_unit, 1
     else:
         return title, 1
@@ -470,18 +478,18 @@ class KingKhaledChef(JsonTreeChef):
                 license=LICENSE,
             )
 
-        subject_sedu = Subject(title="التربية الخاصة Special Education", 
-                            source_id="التربية الخاصة Special Education")
-        subject_sedu.load("resources_ar_special_education.json", auto_parse=True)
+        #subject_sedu = Subject(title="التربية الخاصة Special Education", 
+        #                    source_id="التربية الخاصة Special Education")
+        #subject_sedu.load("resources_ar_special_education.json", auto_parse=True)
 
         subject_about_edu = Subject(title="في التربية والتعليم About Education and Schooling",
                                 source_id="في التربية والتعليم About Education and Schooling")
         subject_about_edu.load("resources_ar_about_education.json", auto_parse=True)
 
-        subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
-                                source_id="مناهج وتدريس Teaching and Curriculum")
-        subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
-        subjects = [subject_sedu, subject_about_edu, subject_teaching]
+        #subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
+        #                        source_id="مناهج وتدريس Teaching and Curriculum")
+        #subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
+        subjects = [subject_about_edu]#[subject_sedu, subject_about_edu, subject_teaching]
         return channel_tree, subjects
 
     def scrape(self, args, options):
