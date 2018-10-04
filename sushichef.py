@@ -59,7 +59,7 @@ sess.mount(BASE_URL, forever_adapter)
 CHANNEL_DOMAIN = "https://www.youtube.com/user/kkudl/playlists"          # Who is providing the content
 CHANNEL_LANGUAGE = "ar"      # Language of channel
 CHANNEL_DESCRIPTION = None                                  # Description of the channel (optional)
-CHANNEL_THUMBNAIL = None                                    # Local path or url to image file (optional)
+CHANNEL_THUMBNAIL = "https://yt3.ggpht.com/a-/AN66SAz9fwCzHEBXcCczoBEGfXr7xKzhooqj0yqVwQ=s288-mo-c-c0xffffffff-rj-k-no"                                    # Local path or url to image file (optional)
 
 # Additional constants
 ################################################################################
@@ -422,7 +422,6 @@ class YouTubeResource(object):
 class KingKhaledChef(JsonTreeChef):
     HOSTNAME = BASE_URL
     TREES_DATA_DIR = os.path.join(DATA_DIR, 'trees')
-    THUMBNAIL = ""
 
     def __init__(self):
         build_path([KingKhaledChef.TREES_DATA_DIR])
@@ -439,11 +438,11 @@ class KingKhaledChef(JsonTreeChef):
         CHANNEL_SOURCE_ID = "sushi-chef-eld-k12-ar"
         channel_tree = dict(
                 source_domain=KingKhaledChef.HOSTNAME,
-                source_id=BASE_URL,
+                source_id=CHANNEL_SOURCE_ID,
                 title=CHANNEL_NAME,
                 description="""This channel contains some interactive courses for secondary education learners on the areas of English and Arabic language skills, basic math skills and Islamic studies as well. Videos are produced by a variety of faculty members at King Khaled University."""
 [:400], #400 UPPER LIMIT characters allowed 
-                thumbnail="https://yt3.ggpht.com/a-/AN66SAz9fwCzHEBXcCczoBEGfXr7xKzhooqj0yqVwQ=s288-mo-c-c0xffffffff-rj-k-no",
+                thumbnail=CHANNEL_THUMBNAIL,
                 author=AUTHOR,
                 language=CHANNEL_LANGUAGE,
                 children=[],
@@ -479,7 +478,7 @@ class KingKhaledChef(JsonTreeChef):
                 title=CHANNEL_NAME,
                 description="""This group of professional development courses are extracted from the Electronic Learning Deanship YouTube channel designed by King Khaled University. The courses tackle contemporary issues and strategies in curriculum development, special education, school leadership, language learning and contemporary issues in education."""
 [:400], #400 UPPER LIMIT characters allowed 
-                thumbnail="https://yt3.ggpht.com/a-/AN66SAz9fwCzHEBXcCczoBEGfXr7xKzhooqj0yqVwQ=s288-mo-c-c0xffffffff-rj-k-no",
+                thumbnail=CHANNEL_THUMBNAIL,
                 author=AUTHOR,
                 language=CHANNEL_LANGUAGE,
                 children=[],
