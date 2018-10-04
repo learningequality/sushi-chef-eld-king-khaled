@@ -173,7 +173,8 @@ class Subject(Node):
                 topic_obj = Topic(topic["title"], topic["source_id"], lang=CHANNEL_LANGUAGE)
                 for unit in topic["units"]:
                     units = Topic.auto_generate_units(unit["source_id"], 
-                        title=unit["title"], lang=unit["lang"], auto_parse=auto_parse)
+                        title=unit["title"], lang=unit["lang"], 
+                        auto_parse=auto_parse, only_folder_name=unit.get("only", None))
                     topic_obj.units.extend(units)
                 self.topics.append(topic_obj)
 
@@ -184,12 +185,17 @@ class Topic(Node):
         self.units = []
 
     @staticmethod
-    def auto_generate_units(url, title=None, lang="en", auto_parse=False):
+    def auto_generate_units(url, title=None, lang="en", auto_parse=False, only_folder_name=None):
         youtube = YouTubeResource(url)
         units = defaultdict(list)
         if title is not None:
-            for _, url in youtube.playlist_name_links():
-                units[title].append((1, url))
+            if only_folder_name is not None:
+                for subtitle, url in youtube.playlist_name_links():
+                    if subtitle.startswith(only_folder_name):
+                        units[title].append((1, url))
+            else:
+                for _, url in youtube.playlist_name_links():
+                    units[title].append((1, url))
         else:
             for name, url in youtube.playlist_name_links():
                 unit_name_list = name.split("|")
