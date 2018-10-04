@@ -43,6 +43,7 @@ LOGGER.addHandler(__logging_handler)
 LOGGER.setLevel(logging.INFO)
 
 DOWNLOAD_VIDEOS = True
+LOAD_VIDEO_LIST = False
 
 sess = requests.Session()
 cache = FileCache('.webcache')
@@ -82,7 +83,7 @@ def title_has_numeration(title):
         elem = elem.strip()
         for num in numbers:
             if elem == num:
-                return title.replace(elem, "").strip(), num
+                return title.replace(elem, "").strip(), int(num)
     
     for arab_num in title:
         index = title.find(arab_num)
@@ -312,7 +313,8 @@ class YouTubeResource(object):
         source_id_hash = hashlib.sha1(self.source_id.encode("utf-8")).hexdigest()
         base_path = build_path([DATA_DIR, CHANNEL_SOURCE_ID])
         videos_url_path = os.path.join(base_path, "{}.json".format(source_id_hash))
-        if if_file_exists(videos_url_path):
+
+        if if_file_exists(videos_url_path) and LOAD_VIDEO_LIST is True:
             with open(videos_url_path, "r") as f:
                 name_url = json.load(f)
         else:
@@ -478,28 +480,33 @@ class KingKhaledChef(JsonTreeChef):
                 license=LICENSE,
             )
 
-        #subject_sedu = Subject(title="التربية الخاصة Special Education", 
-        #                    source_id="التربية الخاصة Special Education")
-        #subject_sedu.load("resources_ar_special_education.json", auto_parse=True)
+        subject_sedu = Subject(title="التربية الخاصة Special Education", 
+                            source_id="التربية الخاصة Special Education")
+        subject_sedu.load("resources_ar_special_education.json", auto_parse=True)
 
         subject_about_edu = Subject(title="في التربية والتعليم About Education and Schooling",
                                 source_id="في التربية والتعليم About Education and Schooling")
         subject_about_edu.load("resources_ar_about_education.json", auto_parse=True)
 
-        #subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
-        #                        source_id="مناهج وتدريس Teaching and Curriculum")
-        #subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
-        subjects = [subject_about_edu]#[subject_sedu, subject_about_edu, subject_teaching]
+        subject_teaching = Subject(title="مناهج وتدريس Teaching and Curriculum",
+                                source_id="مناهج وتدريس Teaching and Curriculum")
+        subject_teaching.load("resources_ar_teaching.json", auto_parse=True)
+        subjects = [subject_sedu, subject_about_edu, subject_teaching]
         return channel_tree, subjects
 
     def scrape(self, args, options):
         download_video = options.get('--download-video', "1")
         basic_lessons = int(options.get('--basic-lessons', "0"))
         intermedian_lessons = int(options.get('--intermedian-lessons', "0"))
+        load_video_list = options.get('--load-video-list', "0")
 
         if int(download_video) == 0:
             global DOWNLOAD_VIDEOS
             DOWNLOAD_VIDEOS = False
+
+        if int(load_video_list) == 1:
+            global LOAD_VIDEO_LIST
+            LOAD_VIDEO_LIST = True
 
         global channel_tree
         if basic_lessons == 1:
