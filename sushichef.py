@@ -440,7 +440,7 @@ class KingKhaledChef(JsonTreeChef):
                 source_domain=KingKhaledChef.HOSTNAME,
                 source_id=CHANNEL_SOURCE_ID,
                 title=CHANNEL_NAME,
-                description="""This channel contains some interactive courses for secondary education learners on the areas of English and Arabic language skills, basic math skills and Islamic studies as well. Videos are produced by a variety of faculty members at King Khaled University."""
+                description="""تحتوي هذه القناة على مجموعة من الدروس في اللغة العربية والتجويد واللغة الإنجليزية والرياضيات الأساسية، وهي مجموعة من المقررات التي صممتها جامعة الملك خالد كجزء من مقرراتها الرقمية المفتوحة. وتناسب هذه الدروس طلاب المرحلة الثانوية ويمكن ملاءمتها مع بعض الصفوف للمرحلة الإعدادية أيضاً."""
 [:400], #400 UPPER LIMIT characters allowed 
                 thumbnail=CHANNEL_THUMBNAIL,
                 author=AUTHOR,
