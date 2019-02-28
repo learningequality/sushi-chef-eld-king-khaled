@@ -476,7 +476,7 @@ class KingKhaledChef(JsonTreeChef):
                 source_domain=KingKhaledChef.HOSTNAME,
                 source_id=CHANNEL_SOURCE_ID,
                 title=CHANNEL_NAME,
-                description="""This group of professional development courses are extracted from the Electronic Learning Deanship YouTube channel designed by King Khaled University. The courses tackle contemporary issues and strategies in curriculum development, special education, school leadership, language learning and contemporary issues in education."""
+                description="""تحتوي هذه القناة على مجموعة من الدورات الملائمة للمعلمين  في مجالات التربية والتعليم ومهارات تدريس اللغة العربية والإدارة المدرسية والمناهج. وهي مجموعة من المقررات التي صممتها جامعة الملك خالد كجزء من مقرراتها الرقمية المفتوحة. وتناسب هذه المحاضرات جميع المعلمين بمختلف تخصصاتهم."""
 [:400], #400 UPPER LIMIT characters allowed 
                 thumbnail=CHANNEL_THUMBNAIL,
                 author=AUTHOR,
